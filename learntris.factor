@@ -35,6 +35,26 @@ C: <tetramino> tetramino
 : <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
                                 V{ "y" "y" } } <tetramino> ;
 
+: <shape-z> ( -- tetramino ) V{ V{ "r" "r" "." }
+                                V{ "." "r" "r" }
+                                V{ "." "." "." } } <tetramino> ;
+
+: <shape-s> ( -- tetramino ) V{  V{ "." "g" "g" }
+                                 V{ "g" "g" "." }
+                                 V{ "." "." "." } } <tetramino> ;
+
+: <shape-j> ( -- tetramino ) V{ V{ "b" "." "." }
+                                V{ "b" "b" "b" }
+                                V{ "." "." "." } } <tetramino> ;
+
+: <shape-l> ( -- tetramino ) V{ V{ "." "." "o" }
+                                V{ "o" "o" "o" }
+                                V{ "." "." "." } } <tetramino> ;
+
+: <shape-t> ( -- tetramino ) V{ V{ "." "m" "." }
+                                V{ "m" "m" "m" }
+                                V{ "." "." "." } } <tetramino> ;
+
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
 : init ( -- game )
@@ -85,6 +105,11 @@ C: <tetramino> tetramino
       { "s" [ simulate-step increment-score increment-cleared ] }
       { "I" [ <shape-i> set-active ] }
       { "O" [ <shape-o> set-active ] }
+      { "Z" [ <shape-z> set-active ] }
+      { "S" [ <shape-s> set-active ] }
+      { "J" [ <shape-j> set-active ] }
+      { "L" [ <shape-l> set-active ] }
+      { "T" [ <shape-t> set-active ] }
       { "t" [ print-active ] }
       [ drop ] } case ;
 
