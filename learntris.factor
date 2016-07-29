@@ -10,6 +10,7 @@ IN: learntris
 SYMBOL: score
 SYMBOL: cleared
 SYMBOL: active-tetr
+SYMBOL: continue?
 
 : print-grid ( 2dSeq -- )
     [
@@ -41,7 +42,8 @@ C: <tetramino> tetramino
     V{ } 22 [ empty-row suffix ] times
     <game>
     0 score set
-    0 cleared set ;
+    0 cleared set
+    t continue? set ;
 
 : use-given-grid ( game -- game )
     drop ! the init game is useless to us now.
@@ -70,25 +72,27 @@ C: <tetramino> tetramino
 
 : print-active ( -- ) active-tetr get print-tetramino drop ;
 
-: command ( game str/f -- game continue? )
-    { { f [ f ] }
-      { "q" [ f ] }
-      { "p" [ print-game t ] }
-      { "g" [ use-given-grid t ] }
-      { "c" [ clear-grid t ] }
-      { "?s" [ print-score t ] }
-      { "?n" [ print-cleared t ] }
-      { "s" [ simulate-step increment-score increment-cleared t ] }
-      { "I" [ <shape-i> set-active t ] }
-      { "O" [ <shape-o> set-active t ] }
-      { "t" [ print-active t ] }
-      [ drop t ] } case ;
+: get-commands ( -- x ) readln " " split ;
+
+: command ( game str/f -- game )
+    { { f [ f continue? set ] }
+      { "q" [ f continue? set ] }
+      { "p" [ print-game ] }
+      { "g" [ use-given-grid ] }
+      { "c" [ clear-grid ] }
+      { "?s" [ print-score ] }
+      { "?n" [ print-cleared ] }
+      { "s" [ simulate-step increment-score increment-cleared ] }
+      { "I" [ <shape-i> set-active ] }
+      { "O" [ <shape-o> set-active ] }
+      { "t" [ print-active ] }
+      [ drop ] } case ;
 
 PRIVATE>
 
 : learntris-main ( -- )
     init
-    [ readln command ] loop
+    [ get-commands [ command ] each continue? get ] loop
     drop ;
 
 MAIN: learntris-main
