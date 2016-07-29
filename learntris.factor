@@ -120,6 +120,7 @@ C: <tetramino> tetramino
       { "L" [ <shape-l> set-active ] }
       { "T" [ <shape-t> set-active ] }
       { "t" [ print-active ] }
+      { ";" [ nl flush ] }
       { ")" [ rotate ] }
       [ drop ] } case ;
 
