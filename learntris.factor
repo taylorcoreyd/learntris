@@ -1,6 +1,6 @@
 ! Copyright (C) 2016 Corey Taylor.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors combinators command-line io kernel math
+USING: accessors columns combinators command-line io kernel math
 math.parser namespaces prettyprint sequences splitting strings
 system vectors ;
 IN: learntris
@@ -54,6 +54,15 @@ C: <tetramino> tetramino
 : <shape-t> ( -- tetramino ) V{ V{ "." "m" "." }
                                 V{ "m" "m" "m" }
                                 V{ "." "." "." } } <tetramino> ;
+
+! we can rotate by first transposing, then reversing each row.
+: rotate ( -- )
+    active-tetr get shape>>
+    dup first [ swap drop ] map-index ! create an array of numbers 0-n
+    [ [ dup ] dip <column> >vector ] map >vector ! transpose
+    [ drop ] dip ! get rid of original
+    V{ } swap [ reverse suffix ] each
+    <tetramino> active-tetr set ;
 
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
@@ -111,6 +120,7 @@ C: <tetramino> tetramino
       { "L" [ <shape-l> set-active ] }
       { "T" [ <shape-t> set-active ] }
       { "t" [ print-active ] }
+      { ")" [ rotate ] }
       [ drop ] } case ;
 
 PRIVATE>
