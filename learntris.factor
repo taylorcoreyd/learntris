@@ -11,19 +11,21 @@ SYMBOL: score
 SYMBOL: cleared
 SYMBOL: active-tetr
 
+: print-grid ( 2dSeq -- )
+    [
+        [ " " write ] [ write ] interleave "\n" write
+    ] each flush ;
+
 TUPLE: game grid ;
 C: <game> game
 : print-game ( game -- game )
-    dup grid>> [
-        [ swap write 9 < [ " " write ] [ "\n" write ] if ] each-index
-    ] each flush ;
+    dup grid>> print-grid ;
+
 
 TUPLE: tetramino shape ;
 C: <tetramino> tetramino
 : print-tetramino ( tetramino -- tetramino )
-    dup shape>> [
-        [ swap write 3 < [ " " write ] [ "\n" write ] if  ] each-index
-    ] each flush ;
+    dup shape>> print-grid ;
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
                                 V{ "c" "c" "c" "c" }
                                 V{ "." "." "." "." }
