@@ -7,6 +7,7 @@ IN: learntris
 
 <PRIVATE
 
+SYMBOL: game
 SYMBOL: score
 SYMBOL: cleared
 SYMBOL: active-tetr
@@ -17,16 +18,17 @@ SYMBOL: continue?
         [ " " write ] [ write ] interleave "\n" write
     ] each flush ;
 
-TUPLE: game grid ;
-C: <game> game
-: print-game ( game -- game )
-    dup grid>> print-grid ;
+TUPLE: game-grid grid ;
+C: <game> game-grid
+: print-game ( -- )
+    game get grid>> print-grid ;
 
 
 TUPLE: tetramino shape ;
 C: <tetramino> tetramino
 : print-tetramino ( tetramino -- tetramino )
     dup shape>> print-grid ;
+
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
                                 V{ "c" "c" "c" "c" }
                                 V{ "." "." "." "." }
@@ -66,22 +68,18 @@ C: <tetramino> tetramino
 
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
-: init ( -- game )
-    ! create a 10x22 game grid
-    V{ } 22 [ empty-row suffix ] times
-    <game>
+: init-grid ( -- ) V{ } 22 [ empty-row suffix ] times <game> game set ;
+
+: init ( -- )
+    init-grid
     0 score set
     0 cleared set
     t continue? set ;
 
-: use-given-grid ( game -- game )
-    drop ! the init game is useless to us now.
+: use-given-grid ( -- )
     V{ } 22 [ readln suffix ] times ! get the first 22 lines (a game)
     [ " " split >vector ] map
-    <game> ;
-
-: clear-grid ( game -- game )
-    drop init ;
+    <game> game set ;
 
 : print-score ( -- ) score get number>string print ;
 
@@ -91,24 +89,26 @@ C: <tetramino> tetramino
 
 : print-cleared ( -- ) cleared get number>string print ;
 
-: simulate-step ( game -- game )
-    grid>> [
+: simulate-step ( -- )
+    game get grid>> [
         dup 0 [ "." = [ 1 + ] [ 0 + ] if ] accumulate drop ! count empty
         0 = [ drop empty-row ] [ ] if ! if it's full, replace, count score
-    ] map <game> ;
+    ] map <game> game set ;
 
 : set-active ( tetramino -- ) active-tetr set ;
 
 : print-active ( -- ) active-tetr get print-tetramino drop ;
 
+: print-matrix-with-active ( -- ) ;
+    
 : get-commands ( -- x ) readln " " split ;
 
-: command ( game str/f -- game )
+: command ( str/f -- )
     { { f [ f continue? set ] }
       { "q" [ f continue? set ] }
       { "p" [ print-game ] }
       { "g" [ use-given-grid ] }
-      { "c" [ clear-grid ] }
+      { "c" [ init-grid ] }
       { "?s" [ print-score ] }
       { "?n" [ print-cleared ] }
       { "s" [ simulate-step increment-score increment-cleared ] }
@@ -128,7 +128,6 @@ PRIVATE>
 
 : learntris-main ( -- )
     init
-    [ get-commands [ command ] each continue? get ] loop
-    drop ;
+    [ get-commands [ command ] each continue? get ] loop ;
 
 MAIN: learntris-main
