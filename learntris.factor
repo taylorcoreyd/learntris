@@ -9,13 +9,25 @@ IN: learntris
 
 SYMBOL: score
 SYMBOL: cleared
+SYMBOL: active-tetr
 
 TUPLE: game grid ;
 C: <game> game
 : print-game ( game -- game )
     dup grid>> [
-        [ swap write 1 + 10 < [ " " write ] [ "\n" write ] if ] each-index
+        [ swap write 9 < [ " " write ] [ "\n" write ] if ] each-index
     ] each flush ;
+
+TUPLE: tetramino shape ;
+C: <tetramino> tetramino
+: print-tetramino ( tetramino -- tetramino )
+    dup shape>> [
+        [ swap write 3 < [ " " write ] [ "\n" write ] if  ] each-index
+    ] each flush ;
+: <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
+                                V{ "c" "c" "c" "c" }
+                                V{ "." "." "." "." }
+                                V{ "." "." "." "." } } <tetramino> ;
 
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
@@ -49,6 +61,10 @@ C: <game> game
         0 = [ drop empty-row ] [ ] if ! if it's full, replace, count score
     ] map <game> ;
 
+: set-active ( tetramino -- ) active-tetr set ;
+
+: print-active ( -- ) active-tetr get print-tetramino drop ;
+
 : command ( game str/f -- game continue? )
     { { f [ f ] }
       { "q" [ f ] }
@@ -58,6 +74,8 @@ C: <game> game
       { "?s" [ print-score t ] }
       { "?n" [ print-cleared t ] }
       { "s" [ simulate-step increment-score increment-cleared t ] }
+      { "I" [ <shape-i> set-active t ] }
+      { "t" [ print-active t ] }
       [ drop t ] } case ;
 
 PRIVATE>
