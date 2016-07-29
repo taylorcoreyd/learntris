@@ -57,7 +57,7 @@ C: <game> game
       { "c" [ clear-grid t ] }
       { "?s" [ print-score t ] }
       { "?n" [ print-cleared t ] }
-      { "s" [ simulate-step t ] }
+      { "s" [ simulate-step increment-score increment-cleared t ] }
       [ drop t ] } case ;
 
 PRIVATE>
