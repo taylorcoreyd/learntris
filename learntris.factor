@@ -31,6 +31,9 @@ C: <tetramino> tetramino
                                 V{ "." "." "." "." }
                                 V{ "." "." "." "." } } <tetramino> ;
 
+: <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
+                                V{ "y" "y" } } <tetramino> ;
+
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
 : init ( -- game )
@@ -77,6 +80,7 @@ C: <tetramino> tetramino
       { "?n" [ print-cleared t ] }
       { "s" [ simulate-step increment-score increment-cleared t ] }
       { "I" [ <shape-i> set-active t ] }
+      { "O" [ <shape-o> set-active t ] }
       { "t" [ print-active t ] }
       [ drop t ] } case ;
 
