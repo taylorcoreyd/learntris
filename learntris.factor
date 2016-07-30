@@ -14,21 +14,22 @@ SYMBOL: active-tetr
 SYMBOL: continue?
 SYMBOL: position
 
-: print-grid ( 2dSeq -- )
-    [
-        [ " " write ] [ write ] interleave "\n" write
-    ] each flush ;
+TUPLE: matrix grid ;
+C: <matrix> matrix
 
-TUPLE: game-grid grid ;
+GENERIC: get-grid-at ( y x matrix -- elem )
+M: matrix get-grid-at
+    grid>> [ swap ] dip nth nth ;
+
+GENERIC: print-grid ( matrix -- )
+M: matrix print-grid
+    grid>> [ [ " " write ] [ write ] interleave "\n" write ] each flush ;
+
+TUPLE: game-grid < matrix ;
 C: <game> game-grid
-: print-game ( -- )
-    game get grid>> print-grid ;
 
-
-TUPLE: tetramino shape ;
+TUPLE: tetramino < matrix ;
 C: <tetramino> tetramino
-: print-tetramino ( tetramino -- tetramino )
-    dup shape>> print-grid ;
 
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
                                 V{ "c" "c" "c" "c" }
@@ -60,7 +61,7 @@ C: <tetramino> tetramino
 
 ! we can rotate by first transposing, then reversing each row.
 : rotate ( -- )
-    active-tetr get shape>>
+    active-tetr get grid>>
     dup first [ swap drop ] map-index ! create an array of numbers 0-n
     [ [ dup ] dip <column> >vector ] map >vector ! transpose
     [ drop ] dip ! get rid of original
@@ -99,7 +100,7 @@ C: <tetramino> tetramino
 
 : set-active ( tetramino -- ) active-tetr set ;
 
-: print-active ( -- ) active-tetr get print-tetramino drop ;
+: print-active ( -- ) active-tetr get print-grid ;
 
 : in-range? ( x a b -- t/f ) ! is x between a and b?
     rot dup -rot ! a x b x
@@ -107,22 +108,20 @@ C: <tetramino> tetramino
 
 : intersect-with-active? ( y x -- t/f )
     position get second ! y x @x
-    dup active-tetr get shape>> length + ! y x @x @dx
+    dup active-tetr get grid>> length + ! y x @x @dx
     in-range?
     swap ! t/f y
     position get first
-    dup active-tetr get shape>> length +
+    dup active-tetr get grid>> length +
     in-range? and ;
 
-: get-grid-at ( x y -- char )
-    game get grid>> nth nth ;
+: get-active-at-game-coords ( y x -- char )
+    [ position get first - ] dip
+    position get second -
+    active-tetr get get-grid-at ;
 
-: shape-at ( x y -- char )
-    position get first - swap position get second - swap
-    active-tetr get shape>> nth nth ;
-
-: shape-at-empty? ( x y -- t/f )
-    shape-at "." = ;
+: tetr-at-empty? ( y x -- t/f )
+    get-active-at-game-coords "." = ;
 
 :: print-matrix-with-active ( -- )
     game get grid>>
@@ -130,13 +129,13 @@ C: <tetramino> tetramino
       [ :> x
         y x intersect-with-active?
         [
-            x y shape-at-empty?
-            [ drop x y get-grid-at ]
-            [ drop x y shape-at >upper ] if
+            y x tetr-at-empty?
+            [ drop y x game get get-grid-at ]
+            [ drop y x get-active-at-game-coords >upper ] if
         ]
-        [ drop x y get-grid-at ] if
+        [ drop y x game get get-grid-at ] if
       ] map-index
-    ] map-index
+    ] map-index <matrix>
     print-grid ;
 
 : get-commands ( -- x ) readln " " split ;
@@ -144,7 +143,7 @@ C: <tetramino> tetramino
 : command ( str/f -- )
     { { f [ f continue? set ] }
       { "q" [ f continue? set ] }
-      { "p" [ print-game ] }
+      { "p" [ game get print-grid ] }
       { "P" [ print-matrix-with-active ] }
       { "g" [ use-given-grid ] }
       { "c" [ init-grid ] }
