@@ -28,43 +28,81 @@ M: matrix print-grid
 TUPLE: game-grid < matrix ;
 C: <game> game-grid
 
-TUPLE: tetramino < matrix start ;
+TUPLE: tetramino < matrix start orientation ;
 C: <tetramino> tetramino
 
+GENERIC: get-left-offset ( tetramino -- num )
+GENERIC: get-right-offset ( tetramino -- num )
+
+TUPLE: shape-i < tetramino ;
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
                                 V{ "c" "c" "c" "c" }
                                 V{ "." "." "." "." }
                                 V{ "." "." "." "." } }
-    { 0 3 } <tetramino> ;
-
+    { 0 3 } 0 shape-i boa ;
+M: shape-i get-left-offset
+    orientation>>
+    { { 0 [ 0 ] }
+      { 1 [ 2 ] }
+      { 2 [ 0 ] }
+      { 3 [ 1 ] } } case ;
+M: shape-i get-right-offset
+    orientation>>
+    { { 0 [ 0 ] }
+      { 1 [ 1 ] }
+      { 2 [ 0 ] }
+      { 3 [ 2 ] } } case ;
+      
+TUPLE: shape-o < tetramino ;
 : <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
                                 V{ "y" "y" } }
-    { 0 4 } <tetramino> ;
+    { 0 4 } 0 shape-o boa ;
+M: shape-o get-left-offset drop 0 ;
+M: shape-o get-right-offset drop 0 ;
 
+TUPLE: shape-z < tetramino ;
 : <shape-z> ( -- tetramino ) V{ V{ "r" "r" "." }
                                 V{ "." "r" "r" }
                                 V{ "." "." "." } }
-    { 0 3 } <tetramino> ;
+    { 0 3 } 0 shape-z boa ;
 
+TUPLE: shape-s < tetramino ;
 : <shape-s> ( -- tetramino ) V{  V{ "." "g" "g" }
                                  V{ "g" "g" "." }
                                  V{ "." "." "." } }
-    { 0 3 } <tetramino> ;
+    { 0 3 } 0 shape-s boa ;
 
+TUPLE: shape-j < tetramino ;
 : <shape-j> ( -- tetramino ) V{ V{ "b" "." "." }
                                 V{ "b" "b" "b" }
                                 V{ "." "." "." } }
-    { 0 3 } <tetramino> ;
+    { 0 3 } 0 shape-j boa ;
 
+TUPLE: shape-l < tetramino ;
 : <shape-l> ( -- tetramino ) V{ V{ "." "." "o" }
                                 V{ "o" "o" "o" }
                                 V{ "." "." "." } }
-    { 0 3 } <tetramino> ;
+    { 0 3 } 0 shape-l boa ;
 
+TUPLE: shape-t < tetramino ;
 : <shape-t> ( -- tetramino ) V{ V{ "." "m" "." }
                                 V{ "m" "m" "m" }
                                 V{ "." "." "." } }
-    { 0 3 } <tetramino> ;
+    { 0 3 } 0 shape-t boa ;
+
+UNION: horizontal-sym-tetr shape-l shape-j shape-z shape-s shape-t ;
+M: horizontal-sym-tetr get-left-offset
+    orientation>>
+    { { 0 [ 0 ] }
+      { 1 [ 1 ] }
+      { 2 [ 0 ] }
+      { 3 [ 0 ] } } case ;
+M: horizontal-sym-tetr get-right-offset
+    orientation>>
+    { { 0 [ 0 ] }
+      { 1 [ 0 ] }
+      { 2 [ 0 ] }
+      { 3 [ 1 ] } } case ;
 
 ! we can rotate by first transposing, then reversing each row.
 : rotate ( -- )
@@ -73,7 +111,12 @@ C: <tetramino> tetramino
     [ [ dup ] dip <column> >vector ] map >vector ! transpose
     [ drop ] dip ! get rid of original
     V{ } swap [ reverse suffix ] each
-    >>grid set ;
+    >>grid set
+
+    ! now we want to update the orientation
+    active-tetr dup get dup orientation>>
+    dup 3 < [ 1 + ] [ drop 0 ] if
+    >>orientation set ;
 
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
@@ -105,6 +148,31 @@ C: <tetramino> tetramino
         0 = [ drop empty-row ] [ ] if ! if it's full, replace, count score
     ] map
     >>grid set ;
+
+: move-left ( -- )
+    position get
+    ! only move if we aren't at the left-bounds
+    second active-tetr get get-left-offset + ! our left position plus offset
+    dup 0 > [
+        1 -
+        1 position get remove-nth 1 swap insert-nth position set
+    ] [ drop ] if ;
+
+: move-right ( -- )
+    position get second
+    active-tetr get get-right-offset -
+    active-tetr get grid>> first length +
+    10 < [
+        position get second
+        1 +
+        1 position get remove-nth 1 swap insert-nth position set
+    ] [ ] if ;
+
+: move-down ( -- )
+    position get
+    first
+    1 +
+    0 position get remove-nth 0 swap insert-nth position set ;
 
 : set-active ( tetramino -- )
     dup active-tetr set
@@ -183,6 +251,10 @@ C: <tetramino> tetramino
       { "t" [ print-active ] }
       { ";" [ nl flush ] }
       { ")" [ rotate ] }
+      { "(" [ rotate rotate rotate ] }
+      { "<" [ move-left ] }
+      { ">" [ move-right ] }
+      { "v" [ move-down ] }
       [ drop ] } case ;
 
 PRIVATE>
