@@ -90,14 +90,14 @@ TUPLE: shape-t < tetramino ;
                                 V{ "." "." "." } }
     { 0 3 } 0 shape-t boa ;
 
-UNION: horizontal-sym-tetr shape-l shape-j shape-z shape-s shape-t ;
-M: horizontal-sym-tetr get-left-offset
+UNION: bottom-empty-wide-tetr shape-l shape-j shape-z shape-s shape-t ;
+M: bottom-empty-wide-tetr get-left-offset
     orientation>>
     { { 0 [ 0 ] }
       { 1 [ 1 ] }
       { 2 [ 0 ] }
       { 3 [ 0 ] } } case ;
-M: horizontal-sym-tetr get-right-offset
+M: bottom-empty-wide-tetr get-right-offset
     orientation>>
     { { 0 [ 0 ] }
       { 1 [ 0 ] }
