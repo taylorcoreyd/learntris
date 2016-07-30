@@ -1,8 +1,8 @@
 ! Copyright (C) 2016 Corey Taylor.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors columns combinators command-line io kernel math
-math.parser namespaces prettyprint sequences splitting strings
-system vectors ;
+USING: accessors ascii columns combinators command-line io
+kernel locals math math.parser namespaces prettyprint sequences
+splitting strings system vectors ;
 IN: learntris
 
 <PRIVATE
@@ -12,6 +12,7 @@ SYMBOL: score
 SYMBOL: cleared
 SYMBOL: active-tetr
 SYMBOL: continue?
+SYMBOL: position
 
 : print-grid ( 2dSeq -- )
     [
@@ -74,7 +75,8 @@ C: <tetramino> tetramino
     init-grid
     0 score set
     0 cleared set
-    t continue? set ;
+    t continue? set
+    { 0 4 } position set ;
 
 : use-given-grid ( -- )
     V{ } 22 [ readln suffix ] times ! get the first 22 lines (a game)
@@ -99,14 +101,51 @@ C: <tetramino> tetramino
 
 : print-active ( -- ) active-tetr get print-tetramino drop ;
 
-: print-matrix-with-active ( -- ) ;
-    
+: in-range? ( x a b -- t/f ) ! is x between a and b?
+    rot dup -rot ! a x b x
+    > -rot <= and ;
+
+: intersect-with-active? ( y x -- t/f )
+    position get second ! y x @x
+    dup active-tetr get shape>> length + ! y x @x @dx
+    in-range?
+    swap ! t/f y
+    position get first
+    dup active-tetr get shape>> length +
+    in-range? and ;
+
+: get-grid-at ( x y -- char )
+    game get grid>> nth nth ;
+
+: shape-at ( x y -- char )
+    position get first - swap position get second - swap
+    active-tetr get shape>> nth nth ;
+
+: shape-at-empty? ( x y -- t/f )
+    shape-at "." = ;
+
+:: print-matrix-with-active ( -- )
+    game get grid>>
+    [ :> y
+      [ :> x
+        y x intersect-with-active?
+        [
+            x y shape-at-empty?
+            [ drop x y get-grid-at ]
+            [ drop x y shape-at >upper ] if
+        ]
+        [ drop x y get-grid-at ] if
+      ] map-index
+    ] map-index
+    print-grid ;
+
 : get-commands ( -- x ) readln " " split ;
 
 : command ( str/f -- )
     { { f [ f continue? set ] }
       { "q" [ f continue? set ] }
       { "p" [ print-game ] }
+      { "P" [ print-matrix-with-active ] }
       { "g" [ use-given-grid ] }
       { "c" [ init-grid ] }
       { "?s" [ print-score ] }
