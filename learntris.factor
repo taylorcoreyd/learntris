@@ -35,7 +35,7 @@ C: <tetramino> tetramino
                                 V{ "c" "c" "c" "c" }
                                 V{ "." "." "." "." }
                                 V{ "." "." "." "." } }
-    { 0 4 } <tetramino> ;
+    { 0 3 } <tetramino> ;
 
 : <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
                                 V{ "y" "y" } }
