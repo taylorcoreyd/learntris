@@ -83,8 +83,7 @@ C: <tetramino> tetramino
     init-grid
     0 score set
     0 cleared set
-    t continue? set
-    { 0 4 } position set ;
+    t continue? set ;
 
 : use-given-grid ( -- )
     game dup get
@@ -107,7 +106,9 @@ C: <tetramino> tetramino
     ] map
     >>grid set ;
 
-: set-active ( tetramino -- ) active-tetr set ;
+: set-active ( tetramino -- )
+    dup active-tetr set
+    start>> position set ;
 
 : print-active ( -- ) active-tetr get print-grid ;
 
