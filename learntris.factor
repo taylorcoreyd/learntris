@@ -1,8 +1,8 @@
 ! Copyright (C) 2016 Corey Taylor.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors ascii columns combinators command-line io
-kernel locals math math.parser namespaces prettyprint sequences
-splitting strings system vectors ;
+USING: accessors arrays ascii columns combinators command-line
+io kernel locals math math.parser namespaces prettyprint
+sequences splitting strings system vectors ;
 IN: learntris
 
 <PRIVATE
@@ -148,7 +148,20 @@ C: <tetramino> tetramino
     ] map-index <matrix>
     print-grid ;
 
-: get-commands ( -- x ) readln " " split ;
+: get-a-command ( input -- input char )
+    dup first 1string dup ! commands char char
+    [ dup ?second dup [ 1string ] [ ] if ] 2dip ! 2char 1char 1char
+    "?" = ! 2char 1char
+    [ swap append [ 1 tail ] dip ]
+    [ [ drop ] dip ] if ;
+
+: parse-commands ( commands input -- x )
+    get-a-command
+    swap [ suffix ] dip ! commands input
+    dup length 1 > not [ drop ] [ 1 tail parse-commands ] if ;
+
+: get-commands ( -- commands )
+    V{ } readln parse-commands ;
 
 : command ( str/f -- )
     { { f [ f continue? set ] }
