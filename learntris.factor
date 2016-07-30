@@ -28,45 +28,52 @@ M: matrix print-grid
 TUPLE: game-grid < matrix ;
 C: <game> game-grid
 
-TUPLE: tetramino < matrix ;
+TUPLE: tetramino < matrix start ;
 C: <tetramino> tetramino
 
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
                                 V{ "c" "c" "c" "c" }
                                 V{ "." "." "." "." }
-                                V{ "." "." "." "." } } <tetramino> ;
+                                V{ "." "." "." "." } }
+    { 0 4 } <tetramino> ;
 
 : <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
-                                V{ "y" "y" } } <tetramino> ;
+                                V{ "y" "y" } }
+    { 0 4 } <tetramino> ;
 
 : <shape-z> ( -- tetramino ) V{ V{ "r" "r" "." }
                                 V{ "." "r" "r" }
-                                V{ "." "." "." } } <tetramino> ;
+                                V{ "." "." "." } }
+    { 0 3 } <tetramino> ;
 
 : <shape-s> ( -- tetramino ) V{  V{ "." "g" "g" }
                                  V{ "g" "g" "." }
-                                 V{ "." "." "." } } <tetramino> ;
+                                 V{ "." "." "." } }
+    { 0 3 } <tetramino> ;
 
 : <shape-j> ( -- tetramino ) V{ V{ "b" "." "." }
                                 V{ "b" "b" "b" }
-                                V{ "." "." "." } } <tetramino> ;
+                                V{ "." "." "." } }
+    { 0 3 } <tetramino> ;
 
 : <shape-l> ( -- tetramino ) V{ V{ "." "." "o" }
                                 V{ "o" "o" "o" }
-                                V{ "." "." "." } } <tetramino> ;
+                                V{ "." "." "." } }
+    { 0 3 } <tetramino> ;
 
 : <shape-t> ( -- tetramino ) V{ V{ "." "m" "." }
                                 V{ "m" "m" "m" }
-                                V{ "." "." "." } } <tetramino> ;
+                                V{ "." "." "." } }
+    { 0 3 } <tetramino> ;
 
 ! we can rotate by first transposing, then reversing each row.
 : rotate ( -- )
-    active-tetr get grid>>
+    active-tetr dup get dup grid>>
     dup first [ swap drop ] map-index ! create an array of numbers 0-n
     [ [ dup ] dip <column> >vector ] map >vector ! transpose
     [ drop ] dip ! get rid of original
     V{ } swap [ reverse suffix ] each
-    <tetramino> active-tetr set ;
+    >>grid set ;
 
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
@@ -80,9 +87,10 @@ C: <tetramino> tetramino
     { 0 4 } position set ;
 
 : use-given-grid ( -- )
+    game dup get
     V{ } 22 [ readln suffix ] times ! get the first 22 lines (a game)
     [ " " split >vector ] map
-    <game> game set ;
+    >>grid set ;
 
 : print-score ( -- ) score get number>string print ;
 
@@ -93,10 +101,11 @@ C: <tetramino> tetramino
 : print-cleared ( -- ) cleared get number>string print ;
 
 : simulate-step ( -- )
-    game get grid>> [
+    game dup get dup grid>> [
         dup 0 [ "." = [ 1 + ] [ 0 + ] if ] accumulate drop ! count empty
         0 = [ drop empty-row ] [ ] if ! if it's full, replace, count score
-    ] map <game> game set ;
+    ] map
+    >>grid set ;
 
 : set-active ( tetramino -- ) active-tetr set ;
 
