@@ -33,6 +33,7 @@ C: <tetramino> tetramino
 
 GENERIC: get-left-offset ( tetramino -- num )
 GENERIC: get-right-offset ( tetramino -- num )
+GENERIC: get-bottom-offset ( tetramino -- num )
 
 TUPLE: shape-i < tetramino ;
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
@@ -40,6 +41,7 @@ TUPLE: shape-i < tetramino ;
                                 V{ "." "." "." "." }
                                 V{ "." "." "." "." } }
     { 0 3 } 0 shape-i boa ;
+! 0 is no rotation. 1 is 90 degrees, 2 is 180, 3 is 270
 M: shape-i get-left-offset
     orientation>>
     { { 0 [ 0 ] }
@@ -52,6 +54,13 @@ M: shape-i get-right-offset
       { 1 [ 1 ] }
       { 2 [ 0 ] }
       { 3 [ 2 ] } } case ;
+M: shape-i get-bottom-offset
+    orientation>>
+    { { 0 [ 2 ] }
+      { 1 [ 0 ] }
+      { 2 [ 3 ] }
+      { 3 [ 0 ] } } case ;
+
       
 TUPLE: shape-o < tetramino ;
 : <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
@@ -59,6 +68,7 @@ TUPLE: shape-o < tetramino ;
     { 0 4 } 0 shape-o boa ;
 M: shape-o get-left-offset drop 0 ;
 M: shape-o get-right-offset drop 0 ;
+M: shape-o get-bottom-offset drop 2 ;
 
 TUPLE: shape-z < tetramino ;
 : <shape-z> ( -- tetramino ) V{ V{ "r" "r" "." }
@@ -103,6 +113,9 @@ M: bottom-empty-wide-tetr get-right-offset
       { 1 [ 0 ] }
       { 2 [ 0 ] }
       { 3 [ 1 ] } } case ;
+M: bottom-empty-wide-tetr get-bottom-offset
+    orientation>>
+    0 = [ 2 ] [ 3 ] if ;
 
 ! we can rotate by first transposing, then reversing each row.
 : rotate ( -- )
@@ -169,10 +182,13 @@ M: bottom-empty-wide-tetr get-right-offset
     ] [ ] if ;
 
 : move-down ( -- )
-    position get
-    first
-    1 +
-    0 position get remove-nth 0 swap insert-nth position set ;
+    position get first
+    active-tetr get get-bottom-offset +
+    22 < [
+        position get first
+        1 +
+        0 position get remove-nth 0 swap insert-nth position set
+    ] [ ] if ;
 
 : set-active ( tetramino -- )
     dup active-tetr set
