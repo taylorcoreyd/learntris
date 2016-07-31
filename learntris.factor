@@ -150,13 +150,13 @@ M: bottom-empty-wide-tetr get-right-offset
     >>grid set ;
 
 : move-left ( -- )
-    position get
-    ! only move if we aren't at the left-bounds
-    second active-tetr get get-left-offset + ! our left position plus offset
-    dup 0 > [
+    position get second
+    active-tetr get get-left-offset +
+    0 > [
+        position get second
         1 -
         1 position get remove-nth 1 swap insert-nth position set
-    ] [ drop ] if ;
+    ] [ ] if ;
 
 : move-right ( -- )
     position get second
