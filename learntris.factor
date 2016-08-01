@@ -13,6 +13,7 @@ SYMBOL: cleared
 SYMBOL: active-tetr
 SYMBOL: continue?
 SYMBOL: position
+SYMBOL: position-next
 
 TUPLE: matrix grid ;
 C: <matrix> matrix
@@ -36,6 +37,11 @@ C: <game> game-grid
 
 TUPLE: tetramino < matrix start ;
 C: <tetramino> tetramino
+
+GENERIC: >uppers ( tetramino -- tetramino )
+M: tetramino >uppers dup grid>> [ [ >upper ] map ] map >>grid ;
+GENERIC: >lowers ( tetramino -- tetramino )
+M: tetramino >lowers dup grid>> [ [ >lower ] map ] map >>grid ;
 
 : transpose ( 2d-Seq -- 2d-Vector )
     dup first [ swap drop ] map-index ! create an array of numbers 0-n
@@ -109,6 +115,8 @@ M: tetramino get-offset-bottom
                                 V{ "." "." "." } }
     { 0 3 } <tetramino> ;
 
+: <empty-tetr> ( -- tetramino ) V{ V{ "." } } { 0 0 } <tetramino> ;
+
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
 : init-grid ( -- ) V{ } 22 [ empty-row suffix ] times <game> game set ;
@@ -159,34 +167,28 @@ M: tetramino get-offset-bottom
         1 position get remove-nth 1 swap insert-nth position set
     ] [ ] if ;
 
-: move-down ( -- )
-    position get first
-    active-tetr get get-height +
-    active-tetr get get-offset-bottom -
-    game get get-height < [
-        position get first
-        1 +
-        0 position get remove-nth 0 swap insert-nth position set
-    ] [ ] if ;
-
 : set-active ( tetramino -- )
     dup active-tetr set
-    start>> position set ;
-
+    start>> dup position set
+    { 1 } swap second suffix position-next set ; ! the next position
+    
 : print-active ( -- ) active-tetr get print-grid ;
 
 : in-range? ( x a b -- t/f ) ! is x between a and b?
     rot dup -rot ! a x b x
     > -rot <= and ;
 
-: intersect-with-active? ( y x -- t/f )
-    position get second ! y x @x
+: intersect-with-active-at? ( y x position -- t/f )
+    second ! y x @x
     dup active-tetr get grid>> length + ! y x @x @dx
     in-range?
     swap ! t/f y
     position get first
     dup active-tetr get grid>> length +
     in-range? and ;
+
+: intersect-with-active? ( y x -- t/f )
+    position get intersect-with-active-at? ;
 
 : get-active-at-game-coords ( y x -- char )
     [ position get first - ] dip
@@ -196,7 +198,7 @@ M: tetramino get-offset-bottom
 : tetr-at-empty? ( y x -- t/f )
     get-active-at-game-coords "." = ;
 
-:: print-matrix-with-active ( -- )
+:: get-matrix-with-active ( -- grid )
     game get grid>>
     [ :> y
       [ :> x
@@ -204,12 +206,47 @@ M: tetramino get-offset-bottom
         [
             y x tetr-at-empty?
             [ drop y x game get get-grid-at ]
-            [ drop y x get-active-at-game-coords >upper ] if
+            [ drop y x get-active-at-game-coords ] if
         ]
         [ drop y x game get get-grid-at ] if
       ] map-index
-    ] map-index <matrix>
-    print-grid ;
+    ] map-index ;
+
+: print-matrix-with-active ( -- )
+    active-tetr get >uppers active-tetr set
+    get-matrix-with-active <matrix> print-grid ;
+
+: set-down-active-tetr ( -- )
+    active-tetr get >lowers active-tetr set
+    get-matrix-with-active <game> game set ;
+
+: set-if-needed ( old-y new-y -- set? )
+    =
+    [ set-down-active-tetr
+      <empty-tetr> active-tetr set
+      t ]
+    [ f ] if ;
+
+: move-down ( -- )
+    position get first
+    active-tetr get get-height +
+    active-tetr get get-offset-bottom -
+    game get get-height < ! we are not on bottom
+    [
+        position get first
+        1 +
+        0 position get remove-nth 0 swap insert-nth position set
+        position-next get first
+        1 +
+        0 position-next get remove-nth 0 swap insert-nth position-next set
+    ]
+    [ ] if ;
+
+: move-drop ( oldpos-y -- )
+    move-down
+    position get first
+    set-if-needed ! gives us a t/f if block is set
+    [ ] [ position get first move-drop ] if ;
 
 : get-a-command ( input -- input char )
     dup first 1string dup ! commands char char
@@ -250,6 +287,7 @@ M: tetramino get-offset-bottom
       { "<" [ move-left ] }
       { ">" [ move-right ] }
       { "v" [ move-down ] }
+      { "V" [ position get first move-drop ] }
       [ drop ] } case ;
 
 PRIVATE>
