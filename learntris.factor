@@ -31,9 +31,9 @@ C: <game> game-grid
 TUPLE: tetramino < matrix start orientation ;
 C: <tetramino> tetramino
 
-GENERIC: get-left-offset ( tetramino -- num )
-GENERIC: get-right-offset ( tetramino -- num )
-GENERIC: get-bottom-offset ( tetramino -- num )
+GENERIC: get-offset-left ( tetramino -- num )
+GENERIC: get-offset-right ( tetramino -- num )
+GENERIC: get-offset-bottom ( tetramino -- num )
 
 TUPLE: shape-i < tetramino ;
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
@@ -42,19 +42,19 @@ TUPLE: shape-i < tetramino ;
                                 V{ "." "." "." "." } }
     { 0 3 } 0 shape-i boa ;
 ! 0 is no rotation. 1 is 90 degrees, 2 is 180, 3 is 270
-M: shape-i get-left-offset
+M: shape-i get-offset-left
     orientation>>
     { { 0 [ 0 ] }
       { 1 [ 2 ] }
       { 2 [ 0 ] }
       { 3 [ 1 ] } } case ;
-M: shape-i get-right-offset
+M: shape-i get-offset-right
     orientation>>
     { { 0 [ 0 ] }
       { 1 [ 1 ] }
       { 2 [ 0 ] }
       { 3 [ 2 ] } } case ;
-M: shape-i get-bottom-offset
+M: shape-i get-offset-bottom
     orientation>>
     { { 0 [ 2 ] }
       { 1 [ 0 ] }
@@ -66,9 +66,9 @@ TUPLE: shape-o < tetramino ;
 : <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
                                 V{ "y" "y" } }
     { 0 4 } 0 shape-o boa ;
-M: shape-o get-left-offset drop 0 ;
-M: shape-o get-right-offset drop 0 ;
-M: shape-o get-bottom-offset drop 2 ;
+M: shape-o get-offset-left drop 0 ;
+M: shape-o get-offset-right drop 0 ;
+M: shape-o get-offset-bottom drop 2 ;
 
 TUPLE: shape-z < tetramino ;
 : <shape-z> ( -- tetramino ) V{ V{ "r" "r" "." }
@@ -101,19 +101,19 @@ TUPLE: shape-t < tetramino ;
     { 0 3 } 0 shape-t boa ;
 
 UNION: bottom-empty-wide-tetr shape-l shape-j shape-z shape-s shape-t ;
-M: bottom-empty-wide-tetr get-left-offset
+M: bottom-empty-wide-tetr get-offset-left
     orientation>>
     { { 0 [ 0 ] }
       { 1 [ 1 ] }
       { 2 [ 0 ] }
       { 3 [ 0 ] } } case ;
-M: bottom-empty-wide-tetr get-right-offset
+M: bottom-empty-wide-tetr get-offset-right
     orientation>>
     { { 0 [ 0 ] }
       { 1 [ 0 ] }
       { 2 [ 0 ] }
       { 3 [ 1 ] } } case ;
-M: bottom-empty-wide-tetr get-bottom-offset
+M: bottom-empty-wide-tetr get-offset-bottom
     orientation>>
     0 = [ 2 ] [ 3 ] if ;
 
@@ -164,7 +164,7 @@ M: bottom-empty-wide-tetr get-bottom-offset
 
 : move-left ( -- )
     position get second
-    active-tetr get get-left-offset +
+    active-tetr get get-offset-left +
     0 > [
         position get second
         1 -
@@ -173,7 +173,7 @@ M: bottom-empty-wide-tetr get-bottom-offset
 
 : move-right ( -- )
     position get second
-    active-tetr get get-right-offset -
+    active-tetr get get-offset-right -
     active-tetr get grid>> first length +
     10 < [
         position get second
@@ -183,7 +183,7 @@ M: bottom-empty-wide-tetr get-bottom-offset
 
 : move-down ( -- )
     position get first
-    active-tetr get get-bottom-offset +
+    active-tetr get get-offset-bottom +
     22 < [
         position get first
         1 +
