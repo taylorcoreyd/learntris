@@ -1,8 +1,8 @@
 ! Copyright (C) 2016 Corey Taylor.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays ascii columns combinators command-line
-io kernel locals math math.parser namespaces prettyprint
-sequences splitting strings system vectors ;
+io kernel locals math math.order math.parser namespaces
+prettyprint sequences splitting strings system vectors ;
 IN: learntris
 
 <PRIVATE
@@ -25,111 +25,89 @@ GENERIC: print-grid ( matrix -- )
 M: matrix print-grid
     grid>> [ [ " " write ] [ write ] interleave "\n" write ] each flush ;
 
+GENERIC: get-width ( matrix -- num )
+M: matrix get-width grid>> first length ;
+
+GENERIC: get-height ( matrix -- num )
+M: matrix get-height grid>> length ;
+
 TUPLE: game-grid < matrix ;
 C: <game> game-grid
 
-TUPLE: tetramino < matrix start orientation ;
+TUPLE: tetramino < matrix start ;
 C: <tetramino> tetramino
 
-GENERIC: get-offset-left ( tetramino -- num )
-GENERIC: get-offset-right ( tetramino -- num )
-GENERIC: get-offset-bottom ( tetramino -- num )
+: transpose ( 2d-Seq -- 2d-Vector )
+    dup first [ swap drop ] map-index ! create an array of numbers 0-n
+    [ [ dup ] dip <column> >vector ] map >vector ! transpose
+    [ drop ] dip ; ! get rid of original
 
-TUPLE: shape-i < tetramino ;
+: reverse-rows ( 2d -- 2d ) [ reverse ] map ;
+
+GENERIC: rotate ( tetramino -- tetramino )
+M: tetramino rotate
+    dup start>> swap ! get a copy of the start position and put it under
+    grid>> transpose reverse-rows
+    swap <tetramino> ;
+
+: find-first-non-. ( seq -- index/f ) [ "." = not ] find drop ;
+
+: find-first-non-.-from-right ( seq -- index/f ) reverse find-first-non-. ;
+
+GENERIC: get-offset-left ( tetramino -- num )
+M: tetramino get-offset-left
+    grid>>
+    [ find-first-non-. ] map [ f = not ] filter
+    10 [ min ] accumulate drop ; ! 10 is bigger than any tetr
+
+! yeah, failed DRY here. But I can't think of a way to factor out the common
+! code right now, for little benefit.
+GENERIC: get-offset-right ( tetramino -- num )
+M: tetramino get-offset-right
+    grid>>
+    [ find-first-non-.-from-right ] map [ f = not ] filter
+    10 [ min ] accumulate drop ;
+
+GENERIC: get-offset-bottom ( tetramino -- num )
+M: tetramino get-offset-bottom
+    ! if we rotate it to the right, then look for left offset, it's
+    ! the same as the bottom offset
+    rotate get-offset-left ;
+
 : <shape-i> ( -- tetramino ) V{ V{ "." "." "." "." }
                                 V{ "c" "c" "c" "c" }
                                 V{ "." "." "." "." }
                                 V{ "." "." "." "." } }
-    { 0 3 } 0 shape-i boa ;
-! 0 is no rotation. 1 is 90 degrees, 2 is 180, 3 is 270
-M: shape-i get-offset-left
-    orientation>>
-    { { 0 [ 0 ] }
-      { 1 [ 2 ] }
-      { 2 [ 0 ] }
-      { 3 [ 1 ] } } case ;
-M: shape-i get-offset-right
-    orientation>>
-    { { 0 [ 0 ] }
-      { 1 [ 1 ] }
-      { 2 [ 0 ] }
-      { 3 [ 2 ] } } case ;
-M: shape-i get-offset-bottom
-    orientation>>
-    { { 0 [ 2 ] }
-      { 1 [ 0 ] }
-      { 2 [ 3 ] }
-      { 3 [ 0 ] } } case ;
+    { 0 3 } <tetramino> ;
 
-      
-TUPLE: shape-o < tetramino ;
 : <shape-o> ( -- tetramino ) V{ V{ "y" "y" }
                                 V{ "y" "y" } }
-    { 0 4 } 0 shape-o boa ;
-M: shape-o get-offset-left drop 0 ;
-M: shape-o get-offset-right drop 0 ;
-M: shape-o get-offset-bottom drop 2 ;
+    { 0 4 } <tetramino> ;
 
-TUPLE: shape-z < tetramino ;
 : <shape-z> ( -- tetramino ) V{ V{ "r" "r" "." }
                                 V{ "." "r" "r" }
                                 V{ "." "." "." } }
-    { 0 3 } 0 shape-z boa ;
+    { 0 3 } <tetramino> ;
 
-TUPLE: shape-s < tetramino ;
 : <shape-s> ( -- tetramino ) V{  V{ "." "g" "g" }
                                  V{ "g" "g" "." }
                                  V{ "." "." "." } }
-    { 0 3 } 0 shape-s boa ;
+    { 0 3 } <tetramino> ;
 
-TUPLE: shape-j < tetramino ;
 : <shape-j> ( -- tetramino ) V{ V{ "b" "." "." }
                                 V{ "b" "b" "b" }
                                 V{ "." "." "." } }
-    { 0 3 } 0 shape-j boa ;
+    { 0 3 } <tetramino> ;
 
-TUPLE: shape-l < tetramino ;
 : <shape-l> ( -- tetramino ) V{ V{ "." "." "o" }
                                 V{ "o" "o" "o" }
                                 V{ "." "." "." } }
-    { 0 3 } 0 shape-l boa ;
+    { 0 3 } <tetramino> ;
 
-TUPLE: shape-t < tetramino ;
 : <shape-t> ( -- tetramino ) V{ V{ "." "m" "." }
                                 V{ "m" "m" "m" }
                                 V{ "." "." "." } }
-    { 0 3 } 0 shape-t boa ;
-
-UNION: bottom-empty-wide-tetr shape-l shape-j shape-z shape-s shape-t ;
-M: bottom-empty-wide-tetr get-offset-left
-    orientation>>
-    { { 0 [ 0 ] }
-      { 1 [ 1 ] }
-      { 2 [ 0 ] }
-      { 3 [ 0 ] } } case ;
-M: bottom-empty-wide-tetr get-offset-right
-    orientation>>
-    { { 0 [ 0 ] }
-      { 1 [ 0 ] }
-      { 2 [ 0 ] }
-      { 3 [ 1 ] } } case ;
-M: bottom-empty-wide-tetr get-offset-bottom
-    orientation>>
-    0 = [ 2 ] [ 3 ] if ;
-
-! we can rotate by first transposing, then reversing each row.
-: rotate ( -- )
-    active-tetr dup get dup grid>>
-    dup first [ swap drop ] map-index ! create an array of numbers 0-n
-    [ [ dup ] dip <column> >vector ] map >vector ! transpose
-    [ drop ] dip ! get rid of original
-    V{ } swap [ reverse suffix ] each
-    >>grid set
-
-    ! now we want to update the orientation
-    active-tetr dup get dup orientation>>
-    dup 3 < [ 1 + ] [ drop 0 ] if
-    >>orientation set ;
+    { 0 3 } <tetramino> ;
 
 : empty-row ( -- vector ) V{ } 10 [ "." suffix ] times ;
 
@@ -173,9 +151,9 @@ M: bottom-empty-wide-tetr get-offset-bottom
 
 : move-right ( -- )
     position get second
+    active-tetr get get-width +
     active-tetr get get-offset-right -
-    active-tetr get grid>> first length +
-    10 < [
+    game get get-width < [
         position get second
         1 +
         1 position get remove-nth 1 swap insert-nth position set
@@ -183,8 +161,9 @@ M: bottom-empty-wide-tetr get-offset-bottom
 
 : move-down ( -- )
     position get first
-    active-tetr get get-offset-bottom +
-    22 < [
+    active-tetr get get-height +
+    active-tetr get get-offset-bottom -
+    game get get-height < [
         position get first
         1 +
         0 position get remove-nth 0 swap insert-nth position set
@@ -266,8 +245,8 @@ M: bottom-empty-wide-tetr get-offset-bottom
       { "T" [ <shape-t> set-active ] }
       { "t" [ print-active ] }
       { ";" [ nl flush ] }
-      { ")" [ rotate ] }
-      { "(" [ rotate rotate rotate ] }
+      { ")" [ active-tetr get rotate active-tetr set ] }
+      { "(" [ active-tetr get rotate rotate rotate active-tetr set ] }
       { "<" [ move-left ] }
       { ">" [ move-right ] }
       { "v" [ move-down ] }
