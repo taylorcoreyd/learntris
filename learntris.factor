@@ -1,8 +1,9 @@
 ! Copyright (C) 2016 Corey Taylor.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays ascii columns combinators command-line
-io kernel locals math math.order math.parser namespaces
-prettyprint sequences splitting strings system vectors ;
+fry io kernel locals math math.order math.parser math.ranges
+namespaces prettyprint sequences splitting strings system
+vectors ;
 IN: learntris
 
 <PRIVATE
@@ -179,11 +180,11 @@ M: tetramino get-offset-bottom
     > -rot <= and ;
 
 : intersect-with-active-at? ( y x position -- t/f )
-    second ! y x @x
+    dup [ second ! y x @x
     dup active-tetr get grid>> length + ! y x @x @dx
     in-range?
-    swap ! t/f y
-    position get first
+    swap ] dip ! t/f y position
+    first
     dup active-tetr get grid>> length +
     in-range? and ;
 
@@ -227,11 +228,43 @@ M: tetramino get-offset-bottom
       t ]
     [ f ] if ;
 
-: move-down ( -- )
+: grid-empty-at? ( x y -- t/f ) game get get-grid-at "." = ;
+: tetra-empty-at? ( x y -- t/f )
+    2dup intersect-with-active? [ tetr-at-empty? ] [ 2drop t ] if ;
+: tetra-bottom-collides-at ( y x i -- t/f )
+    swap -rot - swap 2dup ! y-i x y-i x
+    over game get get-height < [ grid-empty-at? ] [ 2drop f ] if
+    [ [ 1 - ] dip tetra-empty-at? ] dip or not ;
+: tetra-collides-with-grid-at? ( y x -- t/f )
+    2dup 0 tetra-bottom-collides-at ! y is the coordinates right under tetr now
+    [ -1 tetra-bottom-collides-at ] dip or ;
+: tetra-collides-with-grid? ( y seq-of-xs -- t/f )
+    over game get get-height <
+    [ [ dupd tetra-collides-with-grid-at? ] map [ ] any? ]
+    [ drop t ] if
+    [ drop ] dip ;
+
+
+: next-has-collision? ( -- t/f ) ! yes I know this is way too long.
+    ! Actually this is *super* bad.....
+    ! Like as bad as it can be. This is embarassing code.
+    ! but it works. Will refactor later.
+    ! first let's get the y-coordinate we're interested in.
     position get first
     active-tetr get get-height +
     active-tetr get get-offset-bottom -
-    game get get-height < ! we are not on bottom
+    ! get a list of x-coords to check
+    position get second dup
+    active-tetr get get-offset-left + swap
+    active-tetr get get-width +
+    active-tetr get get-offset-right -
+    [a,b) 
+    ! y { x1, x2, x3, ... xn }
+    tetra-collides-with-grid? ;
+    
+: move-down ( -- )
+    next-has-collision? not ! we are not on bottom
+    ! and we have no collisions coming
     [
         position get first
         1 +
